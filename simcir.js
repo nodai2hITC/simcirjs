@@ -362,7 +362,7 @@ simcir.$ = function() {
       var args = [ this ];
       for (var i = 0; i < arguments.length; i += 1) {
         args.push(arguments[i]);
-      }; 
+      };
       return data.apply(null, args);
     },
     val : function() {
@@ -802,7 +802,7 @@ simcir.$ = function() {
       while (_queue != null && getTime() - start < limit) {
         dispatchEvent();
       }
-      window.setTimeout(timerHandler, 
+      window.setTimeout(timerHandler,
         Math.max(delay - limit, delay - (getTime() - start) ) );
     };
     timerHandler();
@@ -1123,7 +1123,7 @@ simcir.$ = function() {
       var label_dblClickHandler = function(event) {
         event.preventDefault();
         event.stopPropagation();
-        var $workspace = $(event.target).closest('.simcir-workspace');
+        var $workspace = $((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)).closest('.simcir-workspace');
         if (!controller($workspace).data().editable) {
           return;
         }
@@ -1278,6 +1278,9 @@ simcir.$ = function() {
       on('mousedown', function(event) {
         event.preventDefault();
       });
+      on('touchstart', function(event) {
+        event.preventDefault();
+      });
     var $dlg = $('<div></div>').
       addClass('simcir-dialog').
       css({position:'absolute'}).
@@ -1289,30 +1292,40 @@ simcir.$ = function() {
     dialogManager.add($dlg);
     var dragPoint = null;
     var dlg_mouseDownHandler = function(event) {
-      if (!$(event.target).hasClass('simcir-dialog') &&
-          !$(event.target).hasClass('simcir-dialog-title') ) {
+      if (!$((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)).hasClass('simcir-dialog') &&
+          !$((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)).hasClass('simcir-dialog-title') ) {
         return;
       }
       event.preventDefault();
       dialogManager.toFront($dlg);
       var off = $dlg.offset();
       dragPoint = {
-        x: event.pageX - off.left,
-        y: event.pageY - off.top};
-      $(document).on('mousemove', dlg_mouseMoveHandler);
-      $(document).on('mouseup', dlg_mouseUpHandler);
+        x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - off.left,
+        y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - off.top};
+        $(document).on('mousemove', dlg_mouseMoveHandler);
+        $(document).on('toucmove', dlg_mouseMoveHandler);
+        $(document).on('mouseup', dlg_mouseUpHandler);
+        $(document).on('touchend', dlg_mouseUpHandler);
     };
     var dlg_mouseMoveHandler = function(event) {
       moveTo(
-          event.pageX - dragPoint.x,
-          event.pageY - dragPoint.y);
+          (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - dragPoint.x,
+          (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - dragPoint.y);
     };
     var dlg_mouseUpHandler = function(event) {
       $(document).off('mousemove', dlg_mouseMoveHandler);
       $(document).off('mouseup', dlg_mouseUpHandler);
+      $(document).off('touchmove', dlg_mouseMoveHandler);
+      $(document).off('touchend', dlg_mouseUpHandler);
     };
     $dlg.on('mousedown', dlg_mouseDownHandler);
+    $dlg.on('touchstart', dlg_mouseDownHandler);
     $closeButton.on('mousedown', function() {
+      $dlg.trigger('close');
+      $dlg.remove();
+      dialogManager.remove($dlg);
+    });
+    $closeButton.on('touchstart', function() {
       $dlg.trigger('close');
       $dlg.remove();
       dialogManager.remove($dlg);
@@ -1590,27 +1603,32 @@ simcir.$ = function() {
       event.stopPropagation();
       var pos = transform($bar);
       dragPoint = {
-          x: event.pageX - pos.x,
-          y: event.pageY - pos.y};
+          x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - pos.x,
+          y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - pos.y};
       $(document).on('mousemove', bar_mouseMoveHandler);
       $(document).on('mouseup', bar_mouseUpHandler);
+      $(document).on('touchmove', bar_mouseMoveHandler);
+      $(document).on('touchend', bar_mouseUpHandler);
     };
     var bar_mouseMoveHandler = function(event) {
       calc(function(unitSize) {
-        setValue( (event.pageY - dragPoint.y) / unitSize);
+        setValue( ((event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - dragPoint.y) / unitSize);
       });
     };
     var bar_mouseUpHandler = function(event) {
       $(document).off('mousemove', bar_mouseMoveHandler);
       $(document).off('mouseup', bar_mouseUpHandler);
+      $(document).off('touchmove', bar_mouseMoveHandler);
+      $(document).off('touchend', bar_mouseUpHandler);
     };
     $bar.on('mousedown', bar_mouseDownHandler);
+    $bar.on('touchstart', bar_mouseDownHandler);
     var body_mouseDownHandler = function(event) {
       event.preventDefault();
       event.stopPropagation();
       var off = $scrollbar.parent('svg').offset();
       var pos = transform($scrollbar);
-      var y = event.pageY - off.top - pos.y;
+      var y = (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - off.top - pos.y;
       var barPos = transform($bar);
       if (y < barPos.y) {
         $scrollbar.trigger('rollup');
@@ -1619,6 +1637,7 @@ simcir.$ = function() {
       }
     };
     $body.on('mousedown', body_mouseDownHandler);
+    $body.on('touchstart', body_mouseDownHandler);
 
     var setSize = function(width, height) {
       _width = width;
@@ -1952,14 +1971,14 @@ simcir.$ = function() {
         disconnect($srcNode);
       }
       dragMoveHandler = function(event) {
-        var x = event.pageX - off.left;
-        var y = event.pageY - off.top;
+        var x = (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - off.left;
+        var y = (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - off.top;
         $temporaryPane.children().remove();
         $temporaryPane.append(createConnector(pos.x, pos.y, x, y) );
       };
       dragCompleteHandler = function(event) {
         $temporaryPane.children().remove();
-        var $dst = $(event.target);
+        var $dst = $((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target));
         if (isActiveNode($dst) ) {
           var $dstNode = $dst.closest('.simcir-node');
           connect($srcNode, $dstNode);
@@ -1975,15 +1994,15 @@ simcir.$ = function() {
       transform($dev, pos.x, pos.y);
       $temporaryPane.append($dev);
       var dragPoint = {
-        x: event.pageX - pos.x,
-        y: event.pageY - pos.y};
+        x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - pos.x,
+        y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - pos.y};
       dragMoveHandler = function(event) {
         transform($dev,
-            event.pageX - dragPoint.x,
-            event.pageY - dragPoint.y);
+            (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - dragPoint.x,
+            (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - dragPoint.y);
       };
       dragCompleteHandler = function(event) {
-        var $target = $(event.target);
+        var $target = $((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target));
         if ($target.closest('.simcir-toolbox').length == 0) {
           $dev.detach();
           var pos = transform($dev);
@@ -2019,15 +2038,15 @@ simcir.$ = function() {
       }
 
       var dragPoint = {
-        x: event.pageX - pos.x,
-        y: event.pageY - pos.y};
+        x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - pos.x,
+        y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - pos.y};
       dragMoveHandler = function(event) {
         // disable events while dragging.
         enableEvents($dev, false);
         var curPos = transform($dev);
         var deltaPos = {
-          x: event.pageX - dragPoint.x - curPos.x,
-          y: event.pageY - dragPoint.y - curPos.y};
+          x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - dragPoint.x - curPos.x,
+          y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - dragPoint.y - curPos.y};
         $.each($selectedDevices, function(i, $dev) {
           var curPos = transform($dev);
           transform($dev,
@@ -2037,7 +2056,7 @@ simcir.$ = function() {
         updateConnectors();
       };
       dragCompleteHandler = function(event) {
-        var $target = $(event.target);
+        var $target = $((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target));
         enableEvents($dev, true);
         $.each($selectedDevices, function(i, $dev) {
           if ($target.closest('.simcir-toolbox').length == 0) {
@@ -2068,10 +2087,10 @@ simcir.$ = function() {
       deselectAll();
       var off = $workspace.offset();
       var pos = offset($devicePane);
-      var p1 = {x: event.pageX - off.left, y: event.pageY - off.top};
+      var p1 = {x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - off.left, y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - off.top};
       dragMoveHandler = function(event) {
         deselectAll();
-        var p2 = {x: event.pageX - off.left, y: event.pageY - off.top};
+        var p2 = {x: (event.changedTouches ? event.changedTouches[0].pageX : event.pageX) - off.left, y: (event.changedTouches ? event.changedTouches[0].pageY : event.pageY) - off.top};
         var selRect = pointToRect(p1, p2);
         $devicePane.children('.simcir-device').each(function() {
           var $dev = $(this);
@@ -2096,7 +2115,7 @@ simcir.$ = function() {
     var mouseDownHandler = function(event) {
       event.preventDefault();
       event.stopPropagation();
-      var $target = $(event.target);
+      var $target = $((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target));
       if (!data.editable) {
         return;
       }
@@ -2113,6 +2132,8 @@ simcir.$ = function() {
       }
       $(document).on('mousemove', mouseMoveHandler);
       $(document).on('mouseup', mouseUpHandler);
+      $(document).on('touchmove', mouseMoveHandler);
+      $(document).on('touchend', mouseUpHandler);
     };
     var mouseMoveHandler = function(event) {
       if (dragMoveHandler != null) {
@@ -2131,8 +2152,11 @@ simcir.$ = function() {
       $temporaryPane.children().remove();
       $(document).off('mousemove', mouseMoveHandler);
       $(document).off('mouseup', mouseUpHandler);
+      $(document).off('touchmove', mouseMoveHandler);
+      $(document).off('touchend', mouseUpHandler);
     };
     $workspace.on('mousedown', mouseDownHandler);
+    $workspace.on('touchstart', mouseDownHandler);
 
     //-------------------------------------------
     //
@@ -2455,7 +2479,7 @@ simcir.$ = function() {
           return !!$s.controller($workspace).data().editable;
         };
         var device_mouseoutHandler = function(event) {
-          if (!isEditable($(event.target) ) ) {
+          if (!isEditable($((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)) ) ) {
             return;
           }
           if (!device.isSelected() ) {
@@ -2464,17 +2488,18 @@ simcir.$ = function() {
           }
         };
         var device_dblclickHandler = function(event) {
-          if (!isEditable($(event.target) ) ) {
+          if (!isEditable($((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)) ) ) {
             return;
           }
           state.direction = (state.direction + 1) % 4;
           updateUI();
           // update connectors.
           $(this).trigger('mousedown').trigger('mouseup');
+          $(this).trigger('touchstart').trigger('touchend');
         };
 
         device.$ui.on('mouseover', function(event) {
-            if (!isEditable($(event.target) ) ) {
+            if (!isEditable($((event.changedTouches ? document.elementFromPoint(event.changedTouches[0].pageX, event.changedTouches[0].pageY) : event.target)) ) ) {
               $title.text('');
               return;
             }
