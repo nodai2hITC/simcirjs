@@ -8,6 +8,61 @@
     <script type="text/javascript" src="simcir-basicset.js"></script>
     <link rel="stylesheet" type="text/css" href="simcir-basicset.css" />
     <!--<script type="text/javascript" src="simcir-library.js"></script>-->
+    <script>
+
+function base64encode(str) {
+    let uint8arr = new TextEncoder().encode(str)
+    let binStr = Array.from(uint8arr).map(b => String.fromCharCode(b)).join("")
+    return btoa(binStr).replaceAll("+", "_").replaceAll("/", "-").replaceAll("=", ".")
+}
+
+function base64decode(str) {
+    let binStr = atob(str.replaceAll("_", "+").replaceAll("-", "/").replaceAll(".", "="))
+    let uint8arr = binStr.split("").map(b => b.charCodeAt(0))
+    return new TextDecoder().decode(Uint8Array.from(uint8arr))
+}
+
+
+function getData() {
+  const text = simcir.controller(document.getElementsByClassName("simcir-workspace")).text()
+  return base64encode("{" + text.match(/"devices".+$/s)[0].replaceAll(/\s+/g, ""))
+}
+
+function setData(data) {
+  const json = JSON.parse(base64decode(data))
+  let simcir_data = {
+    "width":640,
+    "height":420,
+    "showToolbox":true,
+    "toolbox":[
+      {"type":"DC"},
+      {"type":"Toggle"},
+      {"type":"LED","color":"#ff0000","label":"LED"},
+      {"type":"AND","label":"AND"},
+      {"type":"OR","label":"OR"},
+      {"type":"NOT","label":"NOT"},
+      {"type":"NAND","label":"NAND"},
+      {"type":"XOR","label":"XOR"},
+      {"type":"4bit7seg","color":"#ff0000"}
+    ],
+    "devices":[],
+    "connectors":[]
+  }
+  if (json.devices) simcir_data.devices = json.devices
+  if (json.connectors) simcir_data.connectors = json.connectors
+  simcir.setupSimcir(document.getElementsByClassName("simcir"), simcir_data )
+}
+
+function urlCopy() {
+  location.hash = getData();
+  navigator.clipboard.writeText(location.href);
+}
+
+window.addEventListener("load", function() {
+  if (location.href.indexOf("#") != -1) setData(location.hash.replace("#", ""))
+})
+
+    </script>
     <title>SimcirJS - タッチ対応版</title>
   </head>
   <body>
@@ -29,6 +84,7 @@
         ]
       }
     </div>
+    <p><button onclick="urlCopy()">URL としてクリップボードに保存</button></p>
     <p><a href="https://lecture.ecc.u-tokyo.ac.jp/johzu/joho/Y2016/LogicSimulator/LogicSimulator/01.html">Original Version</a></p>
   </body>
 </html>
