@@ -49,7 +49,17 @@
 }
 
 .simcir-connector-hot {
-  /* stroke: #ff0000; */
+  animation: 0.5s 0s infinite alternate connectorHot;
+}
+
+@keyframes connectorHot {
+  0% {
+    stroke: #0000ff;
+  }
+
+  100% {
+    stroke: #ff0000;
+  }
 }
 
 .simcir-joint-point {
@@ -92,7 +102,17 @@
 }
 
 .simcir-node-hot {
-  stroke: #ff0000;
+  animation: 0.5s 0s infinite alternate nodeHot;
+}
+
+@keyframes nodeHot {
+  0% {
+    stroke: #000000;
+  }
+
+  100% {
+    stroke: #ff0000;
+  }
 }
 
 .simcir-node-hover {
